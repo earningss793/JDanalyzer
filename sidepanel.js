@@ -274,11 +274,13 @@ JSON 형식:
   }
 }
 
-async function callOpenAI(apiKey, messages) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+const VERCEL_API = 'https://jdanalyzer.vercel.app/api/analyze';
+
+async function callOpenAI(_apiKey, messages) {
+  const res = await fetch(VERCEL_API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: 'gpt-4o', max_tokens: 1800, messages })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages })
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `API ${res.status}`); }
   return res.json();

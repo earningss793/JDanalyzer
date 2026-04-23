@@ -10,7 +10,7 @@
     "sidePanel"
   ],
   "host_permissions": [
-    "https://api.anthropic.com/*",
+    "https://jdanalyzer.vercel.app/*",
     "https://api.notion.com/*"
   ],
   "background": {
