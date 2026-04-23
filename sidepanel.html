@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>JD Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#278EFF;--blue-light:#EBF4FF;--blue-mid:rgba(39,142,255,.15);
+  --bg:#F0F4FA;--surface:#FFFFFF;--surface2:#F7F9FC;--border:#E8EDF5;
+  --text:#0D1B2A;--text2:#4A5568;--muted:#94A3B8;
+  --green:#10C98F;--green-light:#E6FBF4;
+  --red:#F5476A;--red-light:#FEF0F3;
+  --yellow:#F59E0B;--yellow-light:#FEF9ED;
+  --shadow-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);
+  --shadow:0 4px 16px rgba(13,27,42,.08),0 1px 4px rgba(13,27,42,.04);
+  --r:14px;--rsm:9px;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;overflow:hidden;}
+#app{display:flex;flex-direction:column;height:100vh;}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:13px 14px 11px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:9px;}
+.logo-icon{width:29px;height:29px;border-radius:8px;background:linear-gradient(135deg,var(--blue),#5AACFF);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(39,142,255,.3);}
+.logo-icon svg{width:14px;height:14px;fill:white;}
+.logo-text{font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:-.3px;}
+.logo-text span{color:var(--blue);}
+
+/* TABS */
+.tabs{display:flex;gap:4px;padding:9px 13px 0;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab{flex:1;padding:7px 4px;text-align:center;font-size:11px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;transition:all .15s;}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+
+/* SCROLL */
+.content{flex:1;overflow-y:auto;padding:14px 14px 24px;}
+.content::-webkit-scrollbar{width:3px;}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+
+/* CURRENT PAGE CARD */
+.page-card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm);border:1px solid var(--border);padding:13px 14px;margin-bottom:12px;}
+.page-top{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+.page-favicon{width:20px;height:20px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;overflow:hidden;}
+.page-favicon img{width:100%;height:100%;object-fit:cover;}
+.page-title-text{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+.page-url{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ANALYZE BUTTON — 메인 CTA */
+.analyze-btn{
+  width:100%;padding:14px;border:none;
+  background:linear-gradient(135deg,var(--blue),#5AACFF);
+  color:white;border-radius:var(--r);
+  font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;
+  cursor:pointer;margin-bottom:0;letter-spacing:.1px;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  box-shadow:0 4px 20px rgba(39,142,255,.35);
+  transition:all .2s;
+}
+.analyze-btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(39,142,255,.45);}
+.analyze-btn:disabled{background:var(--border);color:var(--muted);box-shadow:none;transform:none;cursor:not-allowed;}
+
+/* PROGRESS STEPS */
+.progress{display:none;margin:14px 0;}
+.progress.active{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:var(--rsm);}
+.step.done{background:var(--green-light);}
+.step.active-step{background:var(--blue-light);}
+.step.fail{background:var(--red-light);}
+.step.wait{background:var(--surface2);}
+.step-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.step.done .step-icon{background:var(--green);color:white;}
+.step.active-step .step-icon{background:var(--blue);color:white;}
+.step.fail .step-icon{background:var(--red);color:white;}
+.step.wait .step-icon{background:var(--border);color:var(--muted);}
+.step-text{font-size:11.5px;font-weight:500;}
+.step.done .step-text{color:var(--green);}
+.step.active-step .step-text{color:var(--blue);}
+.step.fail .step-text{color:var(--red);}
+.step.wait .step-text{color:var(--muted);}
+.step-spin{width:14px;height:14px;border:2px solid rgba(39,142,255,.2);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* FALLBACK UI */
+.fallback{display:none;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm);border:1px solid var(--border);padding:14px;margin-top:12px;}
+.fallback.active{display:block;}
+.fallback-title{font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.fallback-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.fb-tab{flex:1;padding:7px;text-align:center;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s;}
+.fb-tab.active{background:var(--blue-light);color:var(--blue);border-color:rgba(39,142,255,.25);}
+.fb-panel{display:none;}
+.fb-panel.active{display:block;}
+textarea.jd-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rsm);color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:none;line-height:1.6;transition:border-color .15s;}
+textarea.jd-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(39,142,255,.1);}
+textarea.jd-input::placeholder{color:var(--muted);}
+
+/* IMAGE UPLOAD */
+.drop-zone{
+  border:2px dashed var(--border);border-radius:var(--rsm);
+  padding:24px 16px;text-align:center;cursor:pointer;
+  transition:all .2s;background:var(--surface2);
+}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);background:var(--blue-light);}
+.drop-icon{font-size:24px;margin-bottom:8px;}
+.drop-text{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.drop-sub{font-size:11px;color:var(--muted);}
+.img-preview{margin-top:10px;display:none;}
+.img-preview.active{display:block;}
+.img-preview img{width:100%;border-radius:var(--rsm);border:1px solid var(--border);max-height:160px;object-fit:cover;}
+.img-preview-label{font-size:10.5px;color:var(--green);font-weight:600;margin-top:5px;text-align:center;}
+#fileInput{display:none;}
+
+/* IMAGE CANDIDATES FROM PAGE */
+.img-candidates{margin-top:10px;}
+.img-cand-label{font-size:10.5px;font-weight:600;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px;}
+.img-cand-list{display:flex;gap:7px;flex-wrap:wrap;}
+.img-cand-item{width:72px;height:52px;border-radius:7px;border:2px solid var(--border);cursor:pointer;overflow:hidden;transition:all .15s;}
+.img-cand-item:hover,.img-cand-item.selected{border-color:var(--blue);box-shadow:0 0 0 2px rgba(39,142,255,.2);}
+.img-cand-item img{width:100%;height:100%;object-fit:cover;}
+
+.fb-analyze-btn{
+  width:100%;padding:11px;margin-top:11px;border:none;
+  background:linear-gradient(135deg,var(--blue),#5AACFF);
+  color:white;border-radius:var(--rsm);
+  font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;
+  box-shadow:0 3px 12px rgba(39,142,255,.28);transition:all .15s;
+}
+.fb-analyze-btn:disabled{background:var(--border);color:var(--muted);box-shadow:none;cursor:not-allowed;}
+
+/* RESULTS */
+#results{display:none;margin-top:14px;}
+#results.active{display:block;}
+
+.match-card{background:linear-gradient(135deg,var(--blue),#4BAEFF);border-radius:var(--r);padding:15px;margin-bottom:10px;box-shadow:0 4px 20px rgba(39,142,255,.3);display:flex;align-items:center;justify-content:space-between;}
+.mc-lbl{font-size:10.5px;font-weight:500;color:rgba(255,255,255,.75);margin-bottom:3px;}
+.mc-score{font-size:27px;font-weight:700;color:white;letter-spacing:-1px;line-height:1;}
+.mc-sub{font-size:10.5px;color:rgba(255,255,255,.7);margin-top:3px;}
+.mc-ring{position:relative;width:56px;height:56px;}
+.mc-ring svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.2);stroke-width:4;}
+.ring-fill{fill:none;stroke:white;stroke-width:4;stroke-linecap:round;stroke-dasharray:147;stroke-dashoffset:147;transition:stroke-dashoffset .8s ease;}
+.ring-lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;}
+
+.sb{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm);border:1px solid var(--border);padding:12px 13px;margin-bottom:9px;}
+.sh{display:flex;align-items:center;gap:7px;margin-bottom:9px;}
+.sp{width:3px;height:13px;border-radius:2px;background:var(--blue);flex-shrink:0;}
+.st{font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;}
+.tags{display:flex;flex-wrap:wrap;gap:4px;}
+.tag{padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;}
+.tr{background:var(--blue-light);color:var(--blue);}
+.tp{background:var(--yellow-light);color:var(--yellow);}
+.th{background:var(--green-light);color:var(--green);}
+.tg{background:var(--red-light);color:var(--red);}
+.te{font-size:11px;color:var(--muted);}
+
+.rec-list{display:flex;flex-direction:column;gap:7px;}
+.rec-item{display:flex;gap:9px;align-items:flex-start;background:var(--surface2);border-radius:var(--rsm);padding:9px 11px;}
+.rec-arrow{width:20px;height:20px;border-radius:5px;background:var(--blue-light);color:var(--blue);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px;font-weight:700;}
+.rec-text{font-size:11.5px;line-height:1.55;color:var(--text2);}
+
+.divider{height:1px;background:var(--border);margin:12px 0;}
+
+.notion-btn{width:100%;padding:11px;background:var(--surface);border:1.5px dashed var(--border);border-radius:var(--rsm);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;margin-top:4px;}
+.notion-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light);}
+
+/* GUIDE */
+#guideInsights{display:none;}
+.gh{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.gl{font-size:12px;font-weight:700;color:var(--text);}
+.gb-badge{font-size:9.5px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--blue-light);color:var(--blue);}
+.gblock{background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:11px 12px;margin-bottom:7px;box-shadow:var(--shadow-sm);}
+.gblock-accent{background:var(--blue-light);border-color:rgba(39,142,255,.2);}
+.gbt{font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:7px;}
+.gblock-accent .gbt{color:rgba(39,142,255,.65);}
+.git{display:flex;flex-direction:column;gap:5px;}
+.gi{display:flex;gap:7px;align-items:flex-start;font-size:11px;line-height:1.55;color:var(--text2);}
+.gd{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.gd-b{background:var(--blue);}.gd-g{background:var(--green);}.gd-r{background:var(--red);}.gd-y{background:var(--yellow);}
+.gsub{font-size:9.5px;font-weight:600;color:var(--muted);margin-bottom:1px;}
+.gft{display:flex;flex-direction:column;gap:5px;}
+.gfr{display:grid;grid-template-columns:68px 1fr;gap:6px;align-items:start;}
+.gfk{font-size:10px;font-weight:700;color:var(--blue);padding-top:1px;}
+.gfv{font-size:10.5px;color:var(--text2);line-height:1.5;}
+
+/* FORM */
+.form-group{margin-bottom:12px;}
+.form-label{font-size:10.5px;font-weight:700;color:var(--text2);letter-spacing:.4px;text-transform:uppercase;margin-bottom:5px;}
+input[type=text],input[type=password],textarea{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--rsm);color:var(--text);padding:10px 12px;font-size:12.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(39,142,255,.1);}
+input::placeholder,textarea::placeholder{color:var(--muted);}
+textarea{resize:none;line-height:1.6;}
+.save-btn{width:100%;padding:11px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--rsm);font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;}
+.save-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light);}
+.settings-group{margin-bottom:16px;}
+.settings-title{font-size:10.5px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.settings-title::before{content:'';width:3px;height:12px;border-radius:2px;background:var(--blue);}
+.hint{font-size:10.5px;color:var(--muted);margin-top:5px;}
+.hint a{color:var(--blue);text-decoration:none;}
+
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--text);color:white;padding:9px 16px;border-radius:10px;font-size:12px;transition:transform .25s ease;white-space:nowrap;z-index:100;box-shadow:var(--shadow);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon"><svg viewBox="0 0 16 16"><path d="M8 1L10 6H15L11 9.5L12.5 15L8 11.5L3.5 15L5 9.5L1 6H6L8 1Z"/></svg></div>
+      <div class="logo-text">JD<span>Analyzer</span></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="analyze">분석</div>
+    <div class="tab" data-tab="profile">내 프로필</div>
+    <div class="tab" data-tab="settings">설정</div>
+  </div>
+
+  <!-- ── ANALYZE ── -->
+  <div class="view active" id="view-analyze">
+    <div class="content">
+
+      <!-- 현재 페이지 표시 -->
+      <div class="page-card">
+        <div class="page-top">
+          <div class="page-favicon" id="pageFavicon">🌐</div>
+          <div class="page-title-text" id="pageTitle">현재 페이지</div>
+        </div>
+        <div class="page-url" id="pageUrl">채용공고 페이지로 이동 후 분석을 시작하세요</div>
+      </div>
+
+      <!-- 메인 CTA -->
+      <button class="analyze-btn" id="analyzeBtn">⚡ 이 페이지 공고 분석하기</button>
+
+      <!-- 진행 상태 -->
+      <div class="progress" id="progressWrap">
+        <div class="step wait" id="step1">
+          <div class="step-icon">📄</div>
+          <div class="step-text">텍스트 추출 중...</div>
+        </div>
+        <div class="step wait" id="step2">
+          <div class="step-icon">🖼</div>
+          <div class="step-text">이미지 공고 확인 중...</div>
+        </div>
+        <div class="step wait" id="step3">
+          <div class="step-icon">🤖</div>
+          <div class="step-text">Claude 분석 중...</div>
+        </div>
+      </div>
+
+      <!-- Fallback UI -->
+      <div class="fallback" id="fallbackUI">
+        <div class="fallback-title">⚠️ 자동 추출 실패 — 직접 입력해주세요</div>
+        <div class="fallback-tabs">
+          <div class="fb-tab active" data-fb="text">텍스트 붙여넣기</div>
+          <div class="fb-tab" data-fb="upload">이미지 업로드</div>
+          <div class="fb-tab" data-fb="pageimg">페이지 이미지</div>
+        </div>
+
+        <!-- 텍스트 붙여넣기 -->
+        <div class="fb-panel active" id="fb-text">
+          <textarea class="jd-input" id="manualText" rows="7" placeholder="채용공고 내용을 여기에 붙여넣어 주세요..."></textarea>
+        </div>
+
+        <!-- 이미지 업로드 -->
+        <div class="fb-panel" id="fb-upload">
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">📸</div>
+            <div class="drop-text">공고 스크린샷을 올려주세요</div>
+            <div class="drop-sub">클릭하거나 여기로 드래그</div>
+          </div>
+          <div class="img-preview" id="uploadPreview">
+            <img id="uploadPreviewImg" src="" alt=""/>
+            <div class="img-preview-label">✓ 이미지 준비됨</div>
+          </div>
+          <input type="file" id="fileInput" accept="image/*"/>
+        </div>
+
+        <!-- 페이지 이미지 선택 -->
+        <div class="fb-panel" id="fb-pageimg">
+          <div class="img-cand-label">페이지에서 찾은 이미지</div>
+          <div class="img-cand-list" id="imgCandList">
+            <div style="font-size:11px;color:var(--muted);">불러오는 중...</div>
+          </div>
+        </div>
+
+        <button class="fb-analyze-btn" id="fbAnalyzeBtn">⚡ 분석 시작</button>
+      </div>
+
+      <!-- Results -->
+      <div id="results">
+        <div class="match-card">
+          <div>
+            <div class="mc-lbl">매칭 점수</div>
+            <div class="mc-score" id="matchScoreText">—</div>
+            <div class="mc-sub" id="matchSubLabel">프로필 입력 후 확인</div>
+          </div>
+          <div class="mc-ring">
+            <svg width="56" height="56" viewBox="0 0 56 56">
+              <circle class="ring-bg" cx="28" cy="28" r="23"/>
+              <circle class="ring-fill" id="matchRingFill" cx="28" cy="28" r="23"/>
+            </svg>
+            <div class="ring-lbl" id="matchRingLabel"></div>
+          </div>
+        </div>
+
+        <div class="sb"><div class="sh"><div class="sp"></div><div class="st">필수 역량</div></div><div class="tags" id="requiredTags"></div></div>
+        <div class="sb"><div class="sh"><div class="sp" style="background:var(--yellow)"></div><div class="st">우대 역량</div></div><div class="tags" id="preferredTags"></div></div>
+        <div class="sb"><div class="sh"><div class="sp" style="background:var(--green)"></div><div class="st">보유 ✓</div></div><div class="tags" id="haveTags"></div></div>
+        <div class="sb"><div class="sh"><div class="sp" style="background:var(--red)"></div><div class="st">보강 필요 ✗</div></div><div class="tags" id="gapTags"></div></div>
+
+        <div class="sb"><div class="sh"><div class="sp"></div><div class="st">포트폴리오 전략</div></div><div class="rec-list" id="recList"></div></div>
+
+        <button class="notion-btn" id="notionSaveBtn">📎 Notion에 저장</button>
+
+        <div id="guideInsights">
+          <div class="divider"></div>
+          <div class="gh"><div class="gl">📖 직무별 가이드</div><div class="gb-badge" id="guideJobBadge"></div></div>
+          <div class="gblock"><div class="gbt">이 공고 이렇게 읽으세요</div><div class="git" id="guideJdLayerBody"></div></div>
+          <div class="gblock"><div class="gbt">채용담당자가 실제로 보는 것</div><div class="git" id="guideEvidenceBody"></div></div>
+          <div class="gblock"><div class="gbt">포트폴리오 필수 구성</div><div class="git" id="guidePortfolioBody"></div></div>
+          <div class="gblock"><div class="gbt">단골 면접 질문</div><div class="git" id="guideInterviewBody"></div></div>
+          <div class="gblock gblock-accent"><div class="gbt">공고 해석 핵심 프레임</div><div class="gft" id="guideFrameTable"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── PROFILE ── -->
+  <div class="view" id="view-profile">
+    <div class="content">
+      <div class="form-group"><div class="form-label">직무 / 연차</div><input type="text" id="profileRole" placeholder="예: 퍼포먼스 마케터, 5년차"/></div>
+      <div class="form-group"><div class="form-label">보유 스킬 · 툴</div><textarea id="profileSkills" rows="3" placeholder="Meta Ads, Google Ads, GA4, SQL..."></textarea></div>
+      <div class="form-group"><div class="form-label">경력 요약</div><textarea id="profileCareer" rows="5" placeholder="스타트업 3년 → 중견기업 2년&#10;- ROAS 평균 300% 달성..."></textarea></div>
+      <div class="form-group"><div class="form-label">희망 직무</div><input type="text" id="profileTarget" placeholder="예: 그로스마케터, CRM"/></div>
+      <button class="save-btn" id="saveProfileBtn">프로필 저장</button>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ── -->
+  <div class="view" id="view-settings">
+    <div class="content">
+      <div class="settings-group">
+        <div class="settings-title">OpenAI API 키</div>
+        <input type="password" id="apiKeyInput" placeholder="sk-..."/>
+        <div class="hint">키는 기기 로컬에만 저장됩니다. <a href="https://console.anthropic.com" target="_blank">발급받기 →</a></div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-title">Notion 연동</div>
+        <input type="password" id="notionTokenInput" placeholder="secret_..." style="margin-bottom:6px;"/>
+        <input type="text" id="notionDbInput" placeholder="데이터베이스 ID"/>
+        <div class="hint">Integration 토큰 + DB ID를 입력하세요.</div>
+      </div>
+      <button class="save-btn" id="saveSettingsBtn">설정 저장</button>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+<script src="config.js"></script>
+<script src="sidepanel.js"></script>
+</body>
+</html>
